@@ -8,14 +8,24 @@ int main(int argc, char const *argv[])
 {
     cout << "Testing KSUID" << endl;
 
-    string test = "Hello World";
+    cout << "Enter string as payload: ";
+
+    string payload;
+
+    cin >> payload;
+
+    cout << "Enter timestamp: ";
+
+    int timestamp;
+
+    cin >> timestamp;
 
     //Convert to byte array
-    byte *testBytes = (byte *) test.c_str();
+    byte *testBytes = (byte *) payload.c_str();
 
     Builder ksuidBuilder = Ksuid::newBuilder();
 
-    ksuidBuilder = ksuidBuilder.withTimeStamp(123456789);
+    ksuidBuilder = ksuidBuilder.withTimeStamp(timestamp);
     ksuidBuilder = ksuidBuilder.withPayload(testBytes);
 
     Ksuid ksuid = ksuidBuilder.build();

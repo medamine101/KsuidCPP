@@ -14,7 +14,29 @@ const int PAD_TO_LENGTH = 27;
 //Comparator should be here
 
 //Needed since Builder appears later in the file
-class Builder;
+// class Builder;
+class Ksuid;
+
+class Builder
+{
+private:
+    
+
+public:
+
+    int timestamp;
+    byte payload[PAYLOAD_BYTES];
+    byte ksuidBytes[TOTAL_BYTES];
+
+    Builder(/* args */);
+    ~Builder();
+
+    Builder withTimeStamp(const int);
+    Builder withPayload(const byte *);
+    Builder withKsuidBytes(const byte*);
+    Builder withKsuidString(const string);
+    Ksuid build();
+};
 
 class Ksuid
 {
@@ -44,7 +66,19 @@ public:
 
 Ksuid::Ksuid(Builder builder)
 {
-    if (builder.ksuidBytes != NULL)
+    //Check if byte array is empty
+
+    bool isEmpty = false;
+    for (int i = 0; i < TOTAL_BYTES; i++)
+    {
+        if (to_integer<int>(builder.ksuidBytes[i]) != 0)
+        {
+            isEmpty = true;
+        }
+    }
+
+
+    if (!isEmpty)
     {
         //Sanity check here line 40 from og java code
 
@@ -105,6 +139,8 @@ byte *Ksuid::asBytes()
 string Ksuid::asString()
 {
     auto encoded = Base62::base62().encode((char *)ksuidBytes, (size_t) TOTAL_BYTES);
+
+    return encoded;
 }
 
 /**
@@ -143,26 +179,26 @@ Ksuid::~Ksuid()
 {
 }
 
-class Builder
-{
-private:
+// class Builder
+// {
+// private:
     
 
-public:
+// public:
 
-    int timestamp;
-    byte payload[PAYLOAD_BYTES];
-    byte ksuidBytes[TOTAL_BYTES];
+//     int timestamp;
+//     byte payload[PAYLOAD_BYTES];
+//     byte ksuidBytes[TOTAL_BYTES];
 
-    Builder(/* args */);
-    ~Builder();
+//     Builder(/* args */);
+//     ~Builder();
 
-    Builder withTimeStamp(const int);
-    Builder withPayload(const byte *);
-    Builder withKsuidBytes(const byte*);
-    Builder withKsuidString(const string);
-    Ksuid build();
-};
+//     Builder withTimeStamp(const int);
+//     Builder withPayload(const byte *);
+//     Builder withKsuidBytes(const byte*);
+//     Builder withKsuidString(const string);
+//     Ksuid build();
+// };
 
 Builder::Builder(/* args */)
 {
