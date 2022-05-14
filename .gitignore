@@ -1,2 +1,5 @@
-.vscode/settings.json
+.vscode
 main
+main.dSYM
+test.cpp
+test

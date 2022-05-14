@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include "base_x.hh"
+#include <vector>
 
 using namespace std;
 
@@ -25,15 +26,17 @@ private:
 public:
 
     int timestamp;
-    byte payload[PAYLOAD_BYTES];
-    byte ksuidBytes[TOTAL_BYTES];
+    // byte payload[PAYLOAD_BYTES];
+    vector<byte> payload;
+    // byte ksuidBytes[TOTAL_BYTES];
+    vector<byte> ksuidBytes;
 
     Builder(/* args */);
     ~Builder();
 
     Builder withTimeStamp(const int);
-    Builder withPayload(const byte *);
-    Builder withKsuidBytes(const byte*);
+    Builder withPayload(vector<byte>);
+    Builder withKsuidBytes(vector<byte>);
     Builder withKsuidString(const string);
     Ksuid build();
 };
@@ -43,8 +46,8 @@ class Ksuid
 private:
     
     int timestamp;
-    byte payload[PAYLOAD_BYTES];
-    byte ksuidBytes[TOTAL_BYTES];
+    vector<byte> payload;
+    vector<byte> ksuidBytes;
 
 public:
 
@@ -54,56 +57,75 @@ public:
 
     Ksuid(Builder);
     static Builder newBuilder();
-    byte *asBytes();
+    vector<byte> asBytes();
     string asString();
     string asRaw();
     //Functions for instant, get time in default and provided timezone
     int getTimestamp();
-    byte *getPayload();
+    string getPayload();
     string toInspectString();
     ~Ksuid();
 };
 
 Ksuid::Ksuid(Builder builder)
 {
-    //Check if byte array is empty
-
-    bool isEmpty = false;
-    for (int i = 0; i < TOTAL_BYTES; i++)
+    //Check if byte array is not empty
+    if (!builder.ksuidBytes.empty())
     {
-        if (to_integer<int>(builder.ksuidBytes[i]) != 0)
+        // Ensure that the byte array is the correct length
+        if (builder.ksuidBytes.size() != TOTAL_BYTES)
         {
-            isEmpty = true;
+            throw std::invalid_argument("Ksuid byte array is not the expected length of " + to_string(TOTAL_BYTES) + " bytes");
         }
-    }
+
+        ksuidBytes = builder.ksuidBytes;
 
 
-    if (!isEmpty)
-    {
-        //Sanity check here line 40 from og java code
+        //FIXME: This is a hack to get the timestamp from the byte array, not known if this is correct
+        // Copy the timestamp
+        timestamp = (int)ksuidBytes[0] << 24 | (int)ksuidBytes[1] << 16 | (int)ksuidBytes[2] << 8 | (int)ksuidBytes[3];
 
-
-        memcpy(ksuidBytes, builder.ksuidBytes, TOTAL_BYTES);
-
-        //Copy the timestamp from the ksuidBytes
-        memcpy(&timestamp, ksuidBytes, TIMESTAMP_BYTES);
-
-        //Copy the payload from the ksuidBytes
-        memcpy(payload, ksuidBytes + TIMESTAMP_BYTES, PAYLOAD_BYTES);
+        // Copy the payload
+        payload = vector<byte>(ksuidBytes.begin() + TIMESTAMP_BYTES, ksuidBytes.end());
 
     }
     else
     {
-        //Sanity check here from like 49 in og java code
+        // Ensure that payload is the correct length
+        if (builder.payload.size() != PAYLOAD_BYTES)
+        {
+            throw std::invalid_argument("Payload byte array is not the expected length of " + to_string(PAYLOAD_BYTES) + " bytes");
+        }
 
         timestamp = builder.timestamp;
         
         //Copy the payload from the builder
-        memcpy(payload, builder.payload, PAYLOAD_BYTES);
+        payload = builder.payload;
 
+
+        //FIXME: This is a hack to create ksuidBytes from the timestamp and payload, not known if this is correct
         //Copy timestamp and payload into ksuidBytes
-        memcpy(ksuidBytes, &timestamp, TIMESTAMP_BYTES);
-        memcpy(ksuidBytes + TIMESTAMP_BYTES, payload, PAYLOAD_BYTES);
+        ksuidBytes = vector<byte>(TOTAL_BYTES);
+        // // ksuidBytes[0] = (byte)((timestamp >> 24) & 0xFF);
+        ksuidBytes[0] = ((byte*)(&timestamp))[3];
+        // // ksuidBytes[1] = (byte)((timestamp >> 16) & 0xFF);
+        ksuidBytes[1] = ((byte*)(&timestamp))[2];
+        // // ksuidBytes[2] = (byte)((timestamp >> 8) & 0xFF);
+        ksuidBytes[2] = ((byte*)(&timestamp))[1];
+        // // ksuidBytes[3] = (byte)(timestamp & 0xFF);
+        ksuidBytes[3] = ((byte*)(&timestamp))[0];
+
+        for (int i = 0; i < PAYLOAD_BYTES; i++)
+        {
+            ksuidBytes[i + TIMESTAMP_BYTES] = payload[i];
+        }
+
+        //print vector
+        for (int i = 0; i < TOTAL_BYTES; i++)
+        {
+            cout << (int)ksuidBytes[i] << " ";
+        }
+        cout << endl;
 
 
 
@@ -126,7 +148,7 @@ Builder Ksuid::newBuilder()
  *
  * @return std::byte array pointer
  */
-byte *Ksuid::asBytes()
+vector<byte> Ksuid::asBytes()
 {
     return ksuidBytes;
 }
@@ -138,9 +160,7 @@ byte *Ksuid::asBytes()
  */
 string Ksuid::asString()
 {
-    auto encoded = Base62::base62().encode((char *)ksuidBytes, (size_t) TOTAL_BYTES);
-
-    return encoded;
+    return Base62::base62().encode((char*) ksuidBytes.data(), TOTAL_BYTES);
 }
 
 /**
@@ -152,7 +172,14 @@ string Ksuid::asRaw()
 {
 
     //Return hex string
-    return Base16::base16().encode((char *)ksuidBytes, (size_t) TOTAL_BYTES);
+
+    stringstream ss;
+    for (int i = 0; i < TOTAL_BYTES; i++)
+    {
+        ss << hex << (int)ksuidBytes[i];
+    }
+
+    return ss.str();
     
 }
 
@@ -161,16 +188,34 @@ int Ksuid::getTimestamp()
     return timestamp;
 }
 
-byte *Ksuid::getPayload()
+string Ksuid::getPayload()
 {
-    return payload;
+
+    ///Convert payload to string
+    stringstream ss;
+    for (int i = 0; i < PAYLOAD_BYTES; i++)
+    {
+        ss << hex << (int)payload[i];
+    }
+
+    string payloadString = ss.str();
+
+
+    return payloadString;
 }
 
 string Ksuid::toInspectString()
 {
     stringstream ss;
-    
-    ss << "REPRESENTATION: " << asString() << " " << asRaw() << "String: " << getTimestamp() << "Raw: " << getPayload();
+
+    //Convert payload to string
+    string payloadString = "";
+    for (int i = 0; i < PAYLOAD_BYTES; i++)
+    {
+        payloadString += (char)payload[i];
+    }
+
+    ss << "REPRESENTATION: " << asString() << " " << asRaw() << "String: " << getTimestamp() << "Raw: " << payloadString;
 
     return ss.str();
 }
@@ -179,26 +224,6 @@ Ksuid::~Ksuid()
 {
 }
 
-// class Builder
-// {
-// private:
-    
-
-// public:
-
-//     int timestamp;
-//     byte payload[PAYLOAD_BYTES];
-//     byte ksuidBytes[TOTAL_BYTES];
-
-//     Builder(/* args */);
-//     ~Builder();
-
-//     Builder withTimeStamp(const int);
-//     Builder withPayload(const byte *);
-//     Builder withKsuidBytes(const byte*);
-//     Builder withKsuidString(const string);
-//     Ksuid build();
-// };
 
 Builder::Builder(/* args */)
 {
@@ -214,18 +239,20 @@ Builder Builder::withTimeStamp(const int timestamp)
     return *this;
 }
 
-Builder Builder::withPayload(const byte* payload)
+Builder Builder::withPayload(vector<byte> payload)
 {
 
-    //Copy payload to new byte array
-    memcpy(this->payload, payload, PAYLOAD_BYTES);
+    //Copy payload to builder's payload
+    this->payload = payload;
+
     return *this;
 }
 
-Builder Builder::withKsuidBytes(const byte* ksuidBytes)
+Builder Builder::withKsuidBytes(vector<byte> ksuidBytes)
 {
-    //Copy ksuidBytes to new byte array
-    memcpy(this->ksuidBytes, ksuidBytes, TOTAL_BYTES);
+    //Copy ksuidBytes
+    this->ksuidBytes = ksuidBytes;
+    
     return *this;
 }
 
@@ -234,10 +261,12 @@ Builder Builder::withKsuidString(const string ksuidString)
     //Get Base62 decoded
     string decoded = Base62::base62().decode(ksuidString);
 
-    //convert string to byte array
-    memcpy(this->ksuidBytes, decoded.c_str(), TOTAL_BYTES);
+    //Loop thorugh decodedCString and copy to ksuidBytes
+    for (int i = 0; i < decoded.length(); i++)
+    {
+        ksuidBytes[i] = (byte) decoded[i];
+    }
 
-    //Convert string to byte array
     return *this;
 }
 
