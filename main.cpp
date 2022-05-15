@@ -35,14 +35,15 @@ int main(int argc, char const *argv[])
 
     Builder ksuidBuilder = Ksuid::newBuilder();
 
-    ksuidBuilder = ksuidBuilder.withTimeStamp(timestamp);
-    ksuidBuilder = ksuidBuilder.withPayload(payload);
+    // ksuidBuilder = ksuidBuilder.withTimeStamp(timestamp);
+    // ksuidBuilder = ksuidBuilder.withPayload(payload);
+    ksuidBuilder = ksuidBuilder.withKsuidString("0000CZAPTv0NGrnhMQIOhkPoKNk");
 
     Ksuid ksuid = ksuidBuilder.build();
     
-    cout << "KSUID: " << ksuid.getPayload() << endl;
-    cout << "KSUID: " << ksuid.getTimestamp() << endl;
-    cout << "KSUID: " << ksuid.asString() << endl;
+    cout << "KSUID Payload: " << ksuid.getPayload() << endl;
+    cout << "KSUID Timestamp: " << ksuid.getTimestamp() << endl;
+    cout << "KSUID as String: " << ksuid.asString() << endl;
 
-    // return 0;
+    return 0;
 }

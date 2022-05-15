@@ -1,7 +1,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
-#include "base_x.hh"
+#include "base_62.hh"
 #include <vector>
 
 using namespace std;
@@ -101,33 +101,18 @@ Ksuid::Ksuid(Builder builder)
         
         //Copy the payload from the builder
         payload = builder.payload;
-
-
-        //FIXME: This is a hack to create ksuidBytes from the timestamp and payload, not known if this is correct
+        
         //Copy timestamp and payload into ksuidBytes
         ksuidBytes = vector<byte>(TOTAL_BYTES);
-        // // ksuidBytes[0] = (byte)((timestamp >> 24) & 0xFF);
         ksuidBytes[0] = ((byte*)(&timestamp))[3];
-        // // ksuidBytes[1] = (byte)((timestamp >> 16) & 0xFF);
         ksuidBytes[1] = ((byte*)(&timestamp))[2];
-        // // ksuidBytes[2] = (byte)((timestamp >> 8) & 0xFF);
         ksuidBytes[2] = ((byte*)(&timestamp))[1];
-        // // ksuidBytes[3] = (byte)(timestamp & 0xFF);
         ksuidBytes[3] = ((byte*)(&timestamp))[0];
 
         for (int i = 0; i < PAYLOAD_BYTES; i++)
         {
             ksuidBytes[i + TIMESTAMP_BYTES] = payload[i];
         }
-
-        //print vector
-        for (int i = 0; i < TOTAL_BYTES; i++)
-        {
-            cout << (int)ksuidBytes[i] << " ";
-        }
-        cout << endl;
-
-
 
 
     }
@@ -259,13 +244,31 @@ Builder Builder::withKsuidBytes(vector<byte> ksuidBytes)
 Builder Builder::withKsuidString(const string ksuidString)
 {
     //Get Base62 decoded
+    // cout << "Ksuid string: " << ksuidString << endl;
+
     string decoded = Base62::base62().decode(ksuidString);
 
+    // cout << "Decoded: " << decoded << endl;
+
+    //delcare with size
+    ksuidBytes = vector<byte>(TOTAL_BYTES);
+
+    //get size difference between decoded and ksuidBytes
+    int sizeDiff = TOTAL_BYTES - decoded.size();
+
     //Loop thorugh decodedCString and copy to ksuidBytes
-    for (int i = 0; i < decoded.length(); i++)
+    for (int i = decoded.size()-1; i >= 0; i--)
     {
-        ksuidBytes[i] = (byte) decoded[i];
+        ksuidBytes[i + sizeDiff] = (byte) decoded[i];
     }
+
+    //print ksuidBytes array
+    // for (int i = 0; i < TOTAL_BYTES; i++)
+    // {
+    //     cout << (int)ksuidBytes[i] << " ";
+    // }
+
+    // cout << endl;
 
     return *this;
 }
