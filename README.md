@@ -9,7 +9,7 @@ Credits to German Mendez Bravo (Kronuz) for the base_x.hh and uinteger_t.hh file
 This implementation is a C++ port of the Java implementation [ksuid](https://github.com/ksuid/ksuid). This verson is functionally equivalent, with some differences listed below:
 - Operator overloading is used in this C++ implementation to support sorting rather than the Java version's equals() and compareTo() methods.
 - The Java version's hashCode() method is not implemented in this C++ version.
-- The Java version's toString() method is not implemented in this C++ version. Other printing methods are implemented.
+- The Java version's toString() method is not implemented in this C++ version. Other string methods are implemented.
 
 Potential Issues with this implementation:
 - If anything other than a 64-bit machine is used, then the toLogString() method may not work as the assumption that an int is 4 bytes is made.
