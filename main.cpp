@@ -38,7 +38,7 @@ int main(int argc, char const *argv[])
 
     // Ksuid k1 = Ksuid::newKsuid();
     Ksuid k1 = Ksuid::newBuilder()
-        // .withTimeStamp(timestamp)
+        .withTimeStamp(timestamp)
         .withPayload(payloadVector)
         .build();
 

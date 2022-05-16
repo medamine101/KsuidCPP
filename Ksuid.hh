@@ -7,6 +7,7 @@
 #include <ctime>
 // #include <fstream>
 #include <iomanip>
+#include <bitset>
 
 using namespace std;
 using namespace std::chrono;
@@ -236,31 +237,72 @@ string Ksuid::toLogString()
 
     ss << "Ksuid[string = " << asString() << ", timestamp = " << getTimestamp() << ", payload = [";
 
+    vector<int> payloadBytesInt = vector<int>(PAYLOAD_BYTES);
+
+    //FIXME: Complete Hack assuming int is 4 bytes
+    for (int i = 0; i < TOTAL_BYTES; i++)
+    {
+        int x = (int) payload[i];
+        int y = x & 0x80;
+        
+        //If MSB of byte is 1, then make all previous bits 1
+        if (y == 0x80)
+        {    
+            x = x | 0xFFFFFF00;
+            payloadBytesInt[i] = x;
+        }
+        else
+        {
+            payloadBytesInt[i] = x;
+        }
+    }
+
     for (int i = 0; i < PAYLOAD_BYTES; i++)
     {
 
         if (i == PAYLOAD_BYTES - 1)
         {
-            ss << (int)payload[i];
+            ss << (int)payloadBytesInt[i];
         }
         else
         {
-            ss << (int)payload[i] << ", ";
+            ss << (int)payloadBytesInt[i] << ", ";
         }
     }
 
     ss << "], " << "ksuidBytes = [";
+
+    vector<int> ksuidBytesInt = vector<int>(TOTAL_BYTES);
+
+    //FIXME: Complete Hack assuming int is 4 bytes
+    for (int i = 0; i < TOTAL_BYTES; i++)
+    {
+        int x = (int) ksuidBytes[i];
+        int y = x & 0x80;
+        
+        //If MSB of byte is 1, then make all previous bits 1
+        if (y == 0x80)
+        {    
+            x = x | 0xFFFFFF00;
+            ksuidBytesInt[i] = x;
+        }
+        else
+        {
+            ksuidBytesInt[i] = x;
+        }
+    }
+    
 
     for (int i = 0; i < TOTAL_BYTES; i++)
     {
 
         if (i == TOTAL_BYTES - 1)
         {
-            ss << (int)ksuidBytes[i];
+            ss << (int)ksuidBytesInt[i];
         }
         else
         {
-            ss << (int)ksuidBytes[i] << ", ";
+            ss << (int)ksuidBytesInt[i] << ", ";
         }
     }
 
