@@ -5,6 +5,8 @@
 #include <vector>
 #include <chrono>
 #include <ctime>
+// #include <fstream>
+#include <iomanip>
 
 using namespace std;
 using namespace std::chrono;
@@ -59,12 +61,12 @@ public:
     vector<byte> asBytes();
     string asString();
     string asRaw();
-    // Functions for instant, get time in default and provided timezone
     tm getTimeStruct();
-    string getTime();
     int getTimestamp();
+    int getTimestampWithEpoch();
     string getPayload();
     string toInspectString();
+    string toLogString();
     ~Ksuid();
 };
 
@@ -194,22 +196,14 @@ tm Ksuid::getTimeStruct()
     return *tm;
 }
 
-string Ksuid::getTime()
-{
-    // Convert UTC timestamp to local time
-    tm currTime = getTimeStruct();
-    time_t t = timegm(&currTime);
-    currTime = *localtime(&t);
-    
-    //print string of format "YYYY-MM-DD hh:mm:ss +0000 UTC"
-    char buffer[80];
-    strftime(buffer, 80, "%Y-%m-%d %H:%M:%S %z %Z", &currTime);
-    return string(buffer);
-}
-
 int Ksuid::getTimestamp()
 {
     return timestamp;
+}
+
+int Ksuid::getTimestampWithEpoch()
+{
+    return timestamp + EPOCH;
 }
 
 string Ksuid::getPayload()
@@ -231,14 +225,46 @@ string Ksuid::toInspectString()
 {
     stringstream ss;
 
-    // Convert payload to string
-    string payloadString = "";
+    ss << "REPRESENTATION:\n\n"<< setw(15) << "String: " << asString() << endl << setw(15) << "Raw: " << asRaw() << endl << endl << "COMPONENTS:\n\n" << setw(15) << "Timestamp: " << getTimestamp() << endl << setw(15) << "Payload: " << getPayload() << endl;
+
+    return ss.str();
+}
+
+string Ksuid::toLogString()
+{
+    stringstream ss;
+
+    ss << "Ksuid[string = " << asString() << ", timestamp = " << getTimestamp() << ", payload = [";
+
     for (int i = 0; i < PAYLOAD_BYTES; i++)
     {
-        payloadString += (char)payload[i];
+
+        if (i == PAYLOAD_BYTES - 1)
+        {
+            ss << (int)payload[i];
+        }
+        else
+        {
+            ss << (int)payload[i] << ", ";
+        }
     }
 
-    ss << "REPRESENTATION: " << asString() << " " << asRaw() << "String: " << getTimestamp() << "Raw: " << payloadString;
+    ss << "], " << "ksuidBytes = [";
+
+    for (int i = 0; i < TOTAL_BYTES; i++)
+    {
+
+        if (i == TOTAL_BYTES - 1)
+        {
+            ss << (int)ksuidBytes[i];
+        }
+        else
+        {
+            ss << (int)ksuidBytes[i] << ", ";
+        }
+    }
+
+    ss << "]]";
 
     return ss.str();
 }
