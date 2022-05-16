@@ -3,8 +3,11 @@
 #include <sstream>
 #include "base_62.hh"
 #include <vector>
+#include <chrono>
+#include <ctime>
 
 using namespace std;
+using namespace std::chrono;
 
 const int EPOCH = 1400000000;
 const int PAYLOAD_BYTES = 16;
@@ -13,7 +16,11 @@ const int TIMESTAMP_BYTES = 4;
 const int TOTAL_BYTES = TIMESTAMP_BYTES + PAYLOAD_BYTES;
 const int PAD_TO_LENGTH = 27;
 
-// TODO: Add Comparator
+/*************************
+ * Helper Function Declarations
+ *************************/
+
+int getCurrentTimeInSeconds(void);
 
 /*************************
  * KSUID and Builder Class
@@ -24,7 +31,7 @@ class Ksuid;
 class Builder
 {
 public:
-    int timestamp;
+    int timestamp = 0;
     vector<byte> payload;
     vector<byte> ksuidBytes;
 
@@ -53,6 +60,8 @@ public:
     string asString();
     string asRaw();
     // Functions for instant, get time in default and provided timezone
+    tm getTimeStruct();
+    string getTime();
     int getTimestamp();
     string getPayload();
     string toInspectString();
@@ -128,7 +137,7 @@ Ksuid Ksuid::newKsuid()
 {
 
     //Generate timestamp in seconds
-    int timestamp = (int)time(NULL) - EPOCH;
+    int timestamp = getCurrentTimeInSeconds();
 
     vector<byte> payload(PAYLOAD_BYTES);
 
@@ -178,6 +187,26 @@ string Ksuid::asRaw()
     return ss.str();
 }
 
+tm Ksuid::getTimeStruct()
+{
+    time_t t = timestamp + EPOCH;
+    tm *tm = gmtime(&t);
+    return *tm;
+}
+
+string Ksuid::getTime()
+{
+    // Convert UTC timestamp to local time
+    tm currTime = getTimeStruct();
+    time_t t = timegm(&currTime);
+    currTime = *localtime(&t);
+    
+    //print string of format "YYYY-MM-DD hh:mm:ss +0000 UTC"
+    char buffer[80];
+    strftime(buffer, 80, "%Y-%m-%d %H:%M:%S %z %Z", &currTime);
+    return string(buffer);
+}
+
 int Ksuid::getTimestamp()
 {
     return timestamp;
@@ -217,6 +246,41 @@ string Ksuid::toInspectString()
 Ksuid::~Ksuid()
 {
 }
+
+/*************************
+ * KSUID operator overloads
+ *************************/
+
+bool operator<(Ksuid a, Ksuid b)
+{
+    return (a.getTimestamp() < b.getTimestamp()) || (a.getTimestamp() == b.getTimestamp() && a.getPayload() < b.getPayload());
+}
+
+bool operator>(Ksuid a, Ksuid b)
+{
+    return (a.getTimestamp() > b.getTimestamp()) || (a.getTimestamp() == b.getTimestamp() && a.getPayload() > b.getPayload());
+}
+
+bool operator<=(Ksuid a, Ksuid b)
+{
+    return (a.getTimestamp() < b.getTimestamp()) || (a.getTimestamp() == b.getTimestamp() && a.getPayload() <= b.getPayload());
+}
+
+bool operator>=(Ksuid a, Ksuid b)
+{
+    return (a.getTimestamp() > b.getTimestamp()) || (a.getTimestamp() == b.getTimestamp() && a.getPayload() >= b.getPayload());
+}
+
+bool operator==(Ksuid a, Ksuid b)
+{
+    return (a.getTimestamp() == b.getTimestamp()) && (a.getPayload() == b.getPayload());
+}
+
+bool operator!=(Ksuid a, Ksuid b)
+{
+    return !(a == b);
+}
+
 
 /*************************
  * Builder Functions
@@ -266,4 +330,13 @@ Builder Builder::withKsuidString(const string ksuidString)
 Ksuid Builder::build()
 {
     return Ksuid(*this);
+}
+
+/*************************
+ * Helper Functions
+ *************************/
+
+int getCurrentTimeInSeconds()
+{
+    return (int) duration_cast<seconds>(system_clock::now().time_since_epoch()).count() - EPOCH;
 }

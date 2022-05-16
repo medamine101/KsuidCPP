@@ -2,6 +2,7 @@
 #include <string>
 #include "Ksuid.hh"
 #include <vector>
+#include <unistd.h>
 
 using namespace std;
 
@@ -27,34 +28,42 @@ int main(int argc, char const *argv[])
     int payloadArray[] = {124, 76, 43, -110, 116, -6, \
     -91, 45, 0, -125, -127, 109, 28, 24, 28, -17 };
 
-    // vector<byte> payload;
+    //create vector of bytes from array
+    vector<byte> payloadVector;
 
-    // for(int i = 0; i < 16; i++)
-    // {
-    //     payload.push_back( (byte) payloadArray[i]);
-    // }
+    for (int i = 0; i < sizeof(payloadArray) / sizeof(payloadArray[0]); i++)
+    {
+        payloadVector.push_back((byte)payloadArray[i]);
+    }
+
+    Ksuid k1 = Ksuid::newKsuid();
+    // Ksuid k1 = Ksuid::newBuilder()
+    //     // .withTimeStamp(timestamp)
+    //     .withPayload(payloadVector)
+    //     .build();
 
 
+    // sleep(2);
 
-    // Builder ksuidBuilder = Ksuid::newBuilder();
+    // Ksuid k2 = Ksuid::newKsuid();
+    // Ksuid k2 = Ksuid::newBuilder()
+    //     // .withTimeStamp(timestamp)
+    //     .withPayload(payloadVector)
+    //     .build();
 
-    // // ksuidBuilder = ksuidBuilder.withTimeStamp(timestamp);
-    // // ksuidBuilder = ksuidBuilder.withPayload(payload);
-    // ksuidBuilder = ksuidBuilder.withKsuidString("1HCpXwx2EK9oYluWbacgeCnFcLf");
+    // Ksuid k3 = Ksuid::newKsuid();
 
-    // Ksuid ksuid = ksuidBuilder.build();
-    
-    // cout << "KSUID Payload: " << ksuid.getPayload() << endl;
-    // cout << "KSUID Timestamp: " << ksuid.getTimestamp() << endl;
-    // cout << "KSUID as String: " << ksuid.asString() << endl;
-    // cout << "KSUID as Raw: " << ksuid.asRaw() << endl;
 
-    Ksuid ksuid = Ksuid::newKsuid();
+    // bool check = k1 != k2;
 
-    cout << "KSUID Payload: " << ksuid.getPayload() << endl;
-    cout << "KSUID Timestamp: " << ksuid.getTimestamp() << endl;
-    cout << "KSUID as String: " << ksuid.asString() << endl;
-    cout << "KSUID as Raw: " << ksuid.asRaw() << endl;
+    cout << "k1: " << k1.asString() << endl;
+    cout << "k1 timestamp: " << k1.getTimestamp() << endl;
+    cout << "k1 payload: " << k1.getPayload() << endl;
+    cout << k1.getTime() << endl;
+    // cout << "k2: " << k2.asString() << endl;
+    // cout << "k2 timestamp: " << k2.getTimestamp() << endl;
+    // cout << check << endl;
+
 
     return 0;
 }
